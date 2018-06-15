@@ -97,6 +97,19 @@ resource "aws_appsync_graphql_api" "test" {
   name = "tf_appsync_%s"
 }
 
+resource "aws_appsync_schema" "test" {
+  api_id = "${aws_appsync_graphql_api.test.id}"
+  definition = <<EOF
+schema {
+    query:tf_appsync_%s
+}
+
+type tf_appsync_%s {
+    tf_appsync_%s: [String]
+}
+EOF
+}
+
 resource "aws_appsync_resolver" "test" {
   api_id = "${aws_appsync_graphql_api.test.id}"
   field_name = "tf_appsync_%s"
@@ -104,8 +117,10 @@ resource "aws_appsync_resolver" "test" {
   data_source_name = "original"
   request_mapping_template = "#set ($myMap = {})"
   response_mapping_template = "#set ($myMap = {})"
+
+  depends_on = ["aws_appsync_schema.test"]
 }
-`, rName, rName, rName)
+`, rName, rName, rName, rName, rName, rName)
 }
 
 func testAccAppsyncResolverConfig_update(rName string) string {
@@ -115,6 +130,19 @@ resource "aws_appsync_graphql_api" "test" {
   name = "tf_appsync_%s"
 }
 
+resource "aws_appsync_schema" "test" {
+  api_id = "${aws_appsync_graphql_api.test.id}"
+  definition = <<EOF
+schema {
+    query:tf_appsync_%s
+}
+
+type tf_appsync_%s {
+    tf_appsync_%s: [String]
+}
+EOF
+}
+
 resource "aws_appsync_resolver" "test" {
   api_id = "${aws_appsync_graphql_api.test.id}"
   field_name = "tf_appsync_%s"
@@ -122,6 +150,8 @@ resource "aws_appsync_resolver" "test" {
   data_source_name = "update"
   request_mapping_template = "#set ($myMap = {})"
   response_mapping_template = "#set ($myMap = {})"
+
+  depends_on = ["aws_appsync_schema.test"]
 }
-`, rName, rName, rName)
+`, rName, rName, rName, rName, rName, rName)
 }
