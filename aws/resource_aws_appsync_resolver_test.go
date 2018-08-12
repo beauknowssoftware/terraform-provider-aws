@@ -110,11 +110,17 @@ type tf_appsync_%s {
 EOF
 }
 
+resource "aws_appsync_datasource" "original" {
+  api_id = "${aws_appsync_graphql_api.test.id}"
+  name = "original"
+  type = "NONE"
+}
+
 resource "aws_appsync_resolver" "test" {
   api_id = "${aws_appsync_graphql_api.test.id}"
   field_name = "tf_appsync_%s"
   type_name = "tf_appsync_%s"
-  data_source_name = "original"
+  data_source_name = "${aws_appsync_datasource.original.name}"
   request_mapping_template = "#set ($myMap = {})"
   response_mapping_template = "#set ($myMap = {})"
 
@@ -143,11 +149,23 @@ type tf_appsync_%s {
 EOF
 }
 
+resource "aws_appsync_datasource" "original" {
+  api_id = "${aws_appsync_graphql_api.test.id}"
+  name = "original"
+  type = "NONE"
+}
+
+resource "aws_appsync_datasource" "update" {
+  api_id = "${aws_appsync_graphql_api.test.id}"
+  name = "update"
+  type = "NONE"
+}
+
 resource "aws_appsync_resolver" "test" {
   api_id = "${aws_appsync_graphql_api.test.id}"
   field_name = "tf_appsync_%s"
   type_name = "tf_appsync_%s"
-  data_source_name = "update"
+  data_source_name = "${aws_appsync_datasource.update.name}"
   request_mapping_template = "#set ($myMap = {})"
   response_mapping_template = "#set ($myMap = {})"
 
