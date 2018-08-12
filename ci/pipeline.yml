@@ -1,0 +1,27 @@
+resources:
+  - name: source
+    type: git
+    source:
+      uri: git@github.com:beauknowssoftware/terraform-provider-aws.git
+      branch: beau-master
+      check_every: 10m
+      private_key: |
+        ((github-key))
+      paths:
+        - ci
+        - aws
+        - vendor
+        - main.go
+        - GNUmakefile
+
+jobs:
+  - name: build
+    plan:
+      - get: source
+        trigger: true
+      - task: compile
+        file: source/ci/tasks/go-build.yml
+        params:
+          CODE_DIR: api
+        output_mapping:
+          executable: api-executable
