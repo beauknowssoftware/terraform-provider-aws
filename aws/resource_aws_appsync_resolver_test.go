@@ -31,6 +31,39 @@ func TestAccAwsAppsyncResolver_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "datasource_name", rName),
 					resource.TestCheckResourceAttr(resourceName, "request_mapping_template", "test"),
 					resource.TestCheckResourceAttr(resourceName, "response_mapping_template", "test"),
+					resource.TestCheckResourceAttr(resourceName, "pipeline_config.#", "0"),
+				),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAwsAppsyncResolver_pipeline(t *testing.T) {
+	rName := fmt.Sprintf("tfacctest%d", acctest.RandInt())
+	resourceName := "aws_appsync_resolver.test"
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckAwsAppsyncResolverDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccAppsyncResolverConfig_pipeline(rName),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAwsAppsyncResolverExists(resourceName),
+					testAccMatchResourceAttrRegionalARN(resourceName, "arn", "appsync", regexp.MustCompile(fmt.Sprintf("apis/.+/types/Query/resolvers/test"))),
+					resource.TestCheckResourceAttr(resourceName, "type_name", "Query"),
+					resource.TestCheckResourceAttr(resourceName, "field_name", "test"),
+					resource.TestCheckResourceAttr(resourceName, "request_mapping_template", "test"),
+					resource.TestCheckResourceAttr(resourceName, "response_mapping_template", "test"),
+					resource.TestCheckResourceAttr(resourceName, "pipeline_config.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "pipeline_config.0.functions.#", "1"),
+					resource.TestCheckResourceAttrSet(resourceName, "pipeline_config.0.functions.0"),
 				),
 			},
 			{
@@ -125,4 +158,42 @@ resource "aws_appsync_resolver" "test" {
   response_mapping_template = "test"
 }
 `, rName, rName)
+}
+
+func testAccAppsyncResolverConfig_pipeline(rName string) string {
+	return fmt.Sprintf(`
+resource "aws_appsync_graphql_api" "test" {
+  authentication_type = "API_KEY"
+  name                = %q
+  schema		      = "type Query { test:String }\nschema { query:Query }"
+}
+
+resource "aws_appsync_datasource" "test" {
+  api_id = "${aws_appsync_graphql_api.test.id}"
+  name   = %q
+  type   = "NONE"
+}
+
+resource "aws_appsync_function" "test" {
+  api_id = "${aws_appsync_graphql_api.test.id}"
+  name = %q
+  description = "test description"
+  datasource_name = "${aws_appsync_datasource.test.name}"
+  request_mapping_template = "test request"
+  response_mapping_template = "test response"
+}
+
+resource "aws_appsync_resolver" "test" {
+  api_id = "${aws_appsync_graphql_api.test.id}"
+  type_name = "Query"
+  field_name = "test"
+  request_mapping_template = "test"
+  response_mapping_template = "test"
+  pipeline_config {
+    functions = [
+      "${aws_appsync_function.test.function_id}",
+    ]
+  }
+}
+`, rName, rName, rName)
 }

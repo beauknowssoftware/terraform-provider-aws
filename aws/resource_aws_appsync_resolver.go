@@ -36,6 +36,7 @@ func resourceAwsAppsyncResolver() *schema.Resource {
 					}
 					return
 				},
+				ConflictsWith: []string{"pipeline_config"},
 			},
 			"type_name": {
 				Type:     schema.TypeString,
@@ -71,6 +72,23 @@ func resourceAwsAppsyncResolver() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"pipeline_config": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"functions": {
+							Type:     schema.TypeList,
+							Required: true,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+						},
+					},
+				},
+				ConflictsWith: []string{"datasource_name"},
+			},
 		},
 	}
 }
@@ -78,18 +96,23 @@ func resourceAwsAppsyncResolver() *schema.Resource {
 func resourceAwsAppsyncResolverCreate(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*AWSClient).appsyncconn
 
-	kind := "UNIT"
 	input := &appsync.CreateResolverInput{
 		ApiId: aws.String(d.Get("api_id").(string)),
 		TypeName:  aws.String(d.Get("type_name").(string)),
 		FieldName:  aws.String(d.Get("field_name").(string)),
-		Kind: &kind,
 		RequestMappingTemplate:  aws.String(d.Get("request_mapping_template").(string)),
 		ResponseMappingTemplate:  aws.String(d.Get("response_mapping_template").(string)),
 	}
 
 	if v, ok := d.GetOk("datasource_name"); ok {
 		input.DataSourceName = aws.String(v.(string))
+	}
+
+	if v, ok := d.GetOk("pipeline_config"); ok {
+		input.Kind = aws.String("PIPELINE")
+		input.PipelineConfig = expandAppsyncPipelineConfig(v.([]interface{}))
+	} else {
+		input.Kind = aws.String("UNIT")
 	}
 
 	_, err := conn.CreateResolver(input)
@@ -127,6 +150,10 @@ func resourceAwsAppsyncResolverRead(d *schema.ResourceData, meta interface{}) er
 		return err
 	}
 
+	if err := d.Set("pipeline_config", flattenAppsyncPipelineConfig(resp.Resolver.PipelineConfig)); err != nil {
+		return fmt.Errorf("error setting pipeline_config: %s", err)
+	}
+
 	d.Set("api_id", apiID)
 	d.Set("arn", resp.Resolver.ResolverArn)
 
@@ -149,18 +176,23 @@ func resourceAwsAppsyncResolverUpdate(d *schema.ResourceData, meta interface{}) 
 		return err
 	}
 
-	kind := "UNIT"
 	input := &appsync.UpdateResolverInput{
 		ApiId: aws.String(apiID),
 		TypeName:  aws.String(typeName),
 		FieldName:  aws.String(fieldName),
-		Kind: &kind,
 		RequestMappingTemplate:  aws.String(d.Get("request_mapping_template").(string)),
 		ResponseMappingTemplate:  aws.String(d.Get("response_mapping_template").(string)),
 	}
 
 	if v, ok := d.GetOk("datasource_name"); ok {
 		input.DataSourceName = aws.String(v.(string))
+	}
+
+	if v, ok := d.GetOk("pipeline_config"); ok {
+		input.Kind = aws.String("PIPELINE")
+		input.PipelineConfig = expandAppsyncPipelineConfig(v.([]interface{}))
+	} else {
+		input.Kind = aws.String("UNIT")
 	}
 
 	_, err = conn.UpdateResolver(input)
@@ -202,4 +234,42 @@ func decodeAppsyncResolverID(id string) (string, string, string, error) {
 		return "", "", "", fmt.Errorf("expected ID in format ApiID-TypeName-FieldName, received: %s", id)
 	}
 	return idParts[0], idParts[1], idParts[2], nil
+}
+
+func expandAppsyncPipelineConfig(l []interface{}) *appsync.PipelineConfig {
+	if len(l) == 0 || l[0] == nil {
+		return nil
+	}
+
+	configured := l[0].(map[string]interface{})
+	configuredFunctions := configured["functions"].([]interface{})
+
+	functions := []*string{}
+	for _, f := range configuredFunctions {
+		fString := f.(string)
+		functions = append(functions, &fString)
+	}
+
+	result := &appsync.PipelineConfig{
+		Functions: functions,
+	}
+
+	return result
+}
+
+func flattenAppsyncPipelineConfig(config *appsync.PipelineConfig) []map[string]interface{} {
+	if config == nil {
+		return nil
+	}
+
+	functions := []interface{} {}
+	for _, f := range config.Functions {
+		functions = append(functions, *f)
+	}
+
+	result := map[string]interface{}{
+		"functions": functions,
+	}
+
+	return []map[string]interface{}{result}
 }
