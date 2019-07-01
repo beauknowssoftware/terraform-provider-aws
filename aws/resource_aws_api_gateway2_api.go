@@ -145,6 +145,11 @@ func resourceAwsApiGateway2ApiRead(d *schema.ResourceData, meta interface{}) err
 	}
 	d.Set("version", resp.Version)
 
+	err = getTagsApiGateway2(conn, d, d.Get("arn").(string))
+	if err != nil {
+		return fmt.Errorf("error reading API Gateway v2 API tags (%s): %s", d.Id(), err)
+	}
+
 	return nil
 }
 
