@@ -8,6 +8,24 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
+// getTags is a helper to get the tags for a resource. It expects the
+// tags field to be named "tags"
+func getTagsApiGateway2(conn *apigatewayv2.ApiGatewayV2, d *schema.ResourceData, arn string) error {
+	resp, err := conn.GetTags(&apigatewayv2.GetTagsInput{
+		ResourceArn: aws.String(arn),
+	})
+	if err != nil {
+		return err
+	}
+
+	err = d.Set("tags", tagsToMapGeneric(resp.Tags))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // setTags is a helper to set the tags for a resource. It expects the
 // tags field to be named "tags"
 func setTagsApiGateway2(conn *apigatewayv2.ApiGatewayV2, d *schema.ResourceData, arn string) error {
