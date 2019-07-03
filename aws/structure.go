@@ -1477,6 +1477,7 @@ func flattenConfigSnapshotDeliveryProperties(p *configservice.ConfigSnapshotDeli
 	return []map[string]interface{}{m}
 }
 
+// TODO This should really be named 'pointersMapToStringMap'?
 func pointersMapToStringList(pointers map[string]*string) map[string]interface{} {
 	list := make(map[string]interface{}, len(pointers))
 	for i, v := range pointers {
@@ -1485,12 +1486,39 @@ func pointersMapToStringList(pointers map[string]*string) map[string]interface{}
 	return list
 }
 
+// TODO This should really be named 'stringMapToPointersMap'?
 func stringMapToPointers(m map[string]interface{}) map[string]*string {
 	list := make(map[string]*string, len(m))
 	for i, v := range m {
 		list[i] = aws.String(v.(string))
 	}
 	return list
+}
+
+// diffStringMaps returns the set of keys and values that must be created,
+// and the set of keys and values that must be destroyed.
+// Equivalent to 'diffTagsGeneric'.
+func diffStringMaps(oldMap, newMap map[string]interface{}) (map[string]*string, map[string]*string) {
+	// First, we're creating everything we have
+	create := map[string]*string{}
+	for k, v := range newMap {
+		create[k] = aws.String(v.(string))
+	}
+
+	// Build the map of what to remove
+	remove := map[string]*string{}
+	for k, v := range oldMap {
+		old, ok := create[k]
+		if !ok || aws.StringValue(old) != v.(string) {
+			// Delete it!
+			remove[k] = aws.String(v.(string))
+		} else if ok {
+			// already present so remove from new
+			delete(create, k)
+		}
+	}
+
+	return create, remove
 }
 
 func flattenDSVpcSettings(
