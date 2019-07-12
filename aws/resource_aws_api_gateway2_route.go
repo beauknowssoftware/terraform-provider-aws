@@ -32,15 +32,6 @@ func resourceAwsApiGateway2Route() *schema.Resource {
 				Optional: true,
 				Default:  false,
 			},
-			"authorization_scopes": {
-				Type:     schema.TypeSet,
-				Optional: true,
-				Elem: &schema.Schema{
-					Type:         schema.TypeString,
-					ValidateFunc: validation.StringLenBetween(1, 64),
-				},
-				Set: schema.HashString,
-			},
 			"authorization_type": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -90,11 +81,10 @@ func resourceAwsApiGateway2RouteCreate(d *schema.ResourceData, meta interface{})
 	conn := meta.(*AWSClient).apigatewayv2conn
 
 	req := &apigatewayv2.CreateRouteInput{
-		ApiId:               aws.String(d.Get("api_id").(string)),
-		ApiKeyRequired:      aws.Bool(d.Get("api_key_required").(bool)),
-		AuthorizationScopes: expandStringSet(d.Get("authorization_scopes").(*schema.Set)),
-		AuthorizationType:   aws.String(d.Get("authorization_type").(string)),
-		RouteKey:            aws.String(d.Get("route_key").(string)),
+		ApiId:             aws.String(d.Get("api_id").(string)),
+		ApiKeyRequired:    aws.Bool(d.Get("api_key_required").(bool)),
+		AuthorizationType: aws.String(d.Get("authorization_type").(string)),
+		RouteKey:          aws.String(d.Get("route_key").(string)),
 	}
 	if v, ok := d.GetOk("authorizer_id"); ok {
 		req.AuthorizerId = aws.String(v.(string))
@@ -143,9 +133,6 @@ func resourceAwsApiGateway2RouteRead(d *schema.ResourceData, meta interface{}) e
 	}
 
 	d.Set("api_key_required", resp.ApiKeyRequired)
-	if err := d.Set("authorization_scopes", flattenStringSet(resp.AuthorizationScopes)); err != nil {
-		return fmt.Errorf("error setting authorization_scopes: %s", err)
-	}
 	d.Set("authorization_type", resp.AuthorizationType)
 	d.Set("authorizer_id", resp.AuthorizerId)
 	d.Set("model_selection_expression", resp.ModelSelectionExpression)
@@ -169,9 +156,6 @@ func resourceAwsApiGateway2RouteUpdate(d *schema.ResourceData, meta interface{})
 	}
 	if d.HasChange("api_key_required") {
 		req.ApiKeyRequired = aws.Bool(d.Get("api_key_required").(bool))
-	}
-	if d.HasChange("authorization_scopes") {
-		req.AuthorizationScopes = expandStringSet(d.Get("authorization_scopes").(*schema.Set))
 	}
 	if d.HasChange("authorization_type") {
 		req.AuthorizationType = aws.String(d.Get("authorization_type").(string))
