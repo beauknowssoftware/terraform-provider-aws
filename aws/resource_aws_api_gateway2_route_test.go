@@ -95,6 +95,42 @@ func TestAccAWSAPIGateway2Route_Authorizer(t *testing.T) {
 	})
 }
 
+func TestAccAWSAPIGateway2Route_Model(t *testing.T) {
+	resourceName := "aws_api_gateway_v2_route.test"
+	modelResourceName := "aws_api_gateway_v2_model.test"
+	rName := fmt.Sprintf("tftestaccapigwv2%s", acctest.RandStringFromCharSet(16, acctest.CharSetAlphaNum))
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckAWSAPIGateway2RouteDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccAWSAPIGateway2RouteConfig_model(rName),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAWSAPIGateway2RouteExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "api_key_required", "false"),
+					resource.TestCheckResourceAttr(resourceName, "authorization_type", apigatewayv2.AuthorizationTypeNone),
+					resource.TestCheckResourceAttr(resourceName, "authorizer_id", ""),
+					resource.TestCheckResourceAttr(resourceName, "model_selection_expression", "action"),
+					resource.TestCheckResourceAttr(resourceName, "operation_name", ""),
+					resource.TestCheckResourceAttr(resourceName, "request_models.%", "1"),
+					resource.TestCheckResourceAttrPair(resourceName, "request_models.test", modelResourceName, "name"),
+					resource.TestCheckResourceAttr(resourceName, "route_key", "$default"),
+					resource.TestCheckResourceAttr(resourceName, "route_response_selection_expression", ""),
+					resource.TestCheckResourceAttr(resourceName, "target", ""),
+				),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportStateIdFunc: testAccAWSAPIGateway2RouteImportStateIdFunc(resourceName),
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func TestAccAWSAPIGateway2Route_SimpleAttributes(t *testing.T) {
 	resourceName := "aws_api_gateway_v2_route.test"
 	rName := fmt.Sprintf("tf-testacc-apigwv2-%s", acctest.RandStringFromCharSet(13, acctest.CharSetAlphaNum))
@@ -259,6 +295,34 @@ resource "aws_api_gateway_v2_route" "test" {
   route_key = "$connect"
 
   authorization_type = "AWS_IAM"
+}
+`)
+}
+
+func testAccAWSAPIGateway2RouteConfig_model(rName string) string {
+	schema := `
+	{
+	  "$schema": "http://json-schema.org/draft-04/schema#",
+	  "title": "ExampleModel",
+	  "type": "object",
+	  "properties": {
+		"id": {
+		  "type": "string"
+		}
+	  }
+	}
+	`
+
+	return testAccAWSAPIGateway2ModelConfig_basic(rName, schema) + fmt.Sprintf(`
+resource "aws_api_gateway_v2_route" "test" {
+  api_id    = "${aws_api_gateway_v2_api.test.id}"
+  route_key = "$default"
+
+  model_selection_expression = "action"
+
+  request_models = {
+    "test" = "${aws_api_gateway_v2_model.test.name}"
+  }
 }
 `)
 }
