@@ -196,6 +196,41 @@ func TestAccAWSAPIGateway2Route_SimpleAttributes(t *testing.T) {
 	})
 }
 
+func TestAccAWSAPIGateway2Route_Target(t *testing.T) {
+	resourceName := "aws_api_gateway_v2_route.test"
+	integrationResourceName := "aws_api_gateway_v2_integration.test"
+	rName := fmt.Sprintf("tf-testacc-apigwv2-%s", acctest.RandStringFromCharSet(13, acctest.CharSetAlphaNum))
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckAWSAPIGateway2RouteDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccAWSAPIGateway2RouteConfig_target(rName),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAWSAPIGateway2RouteExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "api_key_required", "false"),
+					resource.TestCheckResourceAttr(resourceName, "authorization_type", apigatewayv2.AuthorizationTypeNone),
+					resource.TestCheckResourceAttr(resourceName, "authorizer_id", ""),
+					resource.TestCheckResourceAttr(resourceName, "model_selection_expression", ""),
+					resource.TestCheckResourceAttr(resourceName, "operation_name", ""),
+					resource.TestCheckResourceAttr(resourceName, "request_models.%", "0"),
+					resource.TestCheckResourceAttr(resourceName, "route_key", "$default"),
+					resource.TestCheckResourceAttr(resourceName, "route_response_selection_expression", ""),
+					testAccCheckAWSAPIGateway2RouteTarget(resourceName, integrationResourceName),
+				),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportStateIdFunc: testAccAWSAPIGateway2RouteImportStateIdFunc(resourceName),
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func testAccCheckAWSAPIGateway2RouteDestroy(s *terraform.State) error {
 	conn := testAccProvider.Meta().(*AWSClient).apigatewayv2conn
 
@@ -254,6 +289,17 @@ func testAccAWSAPIGateway2RouteImportStateIdFunc(resourceName string) resource.I
 		}
 
 		return fmt.Sprintf("%s/%s", rs.Primary.Attributes["api_id"], rs.Primary.ID), nil
+	}
+}
+
+func testAccCheckAWSAPIGateway2RouteTarget(resourceName, integrationResourceName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[integrationResourceName]
+		if !ok {
+			return fmt.Errorf("Not Found: %s", integrationResourceName)
+		}
+
+		return resource.TestCheckResourceAttr(resourceName, "target", fmt.Sprintf("integrations/%s", rs.Primary.ID))(s)
 	}
 }
 
@@ -337,6 +383,17 @@ resource "aws_api_gateway_v2_route" "test" {
   api_key_required                    = true
   operation_name                      = "GET"
   route_response_selection_expression = "$default"
+}
+`)
+}
+
+func testAccAWSAPIGateway2RouteConfig_target(rName string) string {
+	return testAccAWSAPIGateway2IntegrationConfig_basic(rName) + fmt.Sprintf(`
+resource "aws_api_gateway_v2_route" "test" {
+  api_id    = "${aws_api_gateway_v2_api.test.id}"
+  route_key = "$default"
+
+  target = "integrations/${aws_api_gateway_v2_integration.test.id}"
 }
 `)
 }
