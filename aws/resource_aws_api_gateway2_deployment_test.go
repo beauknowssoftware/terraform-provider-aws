@@ -34,10 +34,10 @@ func TestAccAWSAPIGateway2Deployment_basic(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			{
-				Config: testAccAWSAPIGateway2DeploymentConfig_basic(rName, ""),
+				Config: testAccAWSAPIGateway2DeploymentConfig_basic(rName, "Test description updated"),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAWSAPIGateway2DeploymentExists(resourceName),
-					resource.TestCheckResourceAttr(resourceName, "description", ""),
+					resource.TestCheckResourceAttr(resourceName, "description", "Test description updated"),
 				),
 			},
 		},
@@ -106,16 +106,12 @@ func testAccAWSAPIGateway2DeploymentImportStateIdFunc(resourceName string) resou
 }
 
 func testAccAWSAPIGateway2DeploymentConfig_basic(rName, description string) string {
-	return fmt.Sprintf(`
-resource "aws_api_gateway_v2_api" "test" {
-  name                       = %[1]q
-  protocol_type              = "WEBSOCKET"
-  route_selection_expression = "$request.body.action"
-}
-
+	return testAccAWSAPIGateway2RouteConfig_target(rName) + fmt.Sprintf(`
 resource "aws_api_gateway_v2_deployment" "test" {
   api_id      = "${aws_api_gateway_v2_api.test.id}"
   description = %[1]q
+
+  depends_on  = ["aws_api_gateway_v2_route.test"]
 }
-`, rName, description)
+`, description)
 }
