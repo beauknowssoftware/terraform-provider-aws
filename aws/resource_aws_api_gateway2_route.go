@@ -96,7 +96,7 @@ func resourceAwsApiGateway2RouteCreate(d *schema.ResourceData, meta interface{})
 		req.OperationName = aws.String(v.(string))
 	}
 	if v, ok := d.GetOk("request_models"); ok {
-		req.RequestModels = expandApiGateway2RouteRequestModels(v.(map[string]interface{}))
+		req.RequestModels = stringMapToPointers(v.(map[string]interface{}))
 	}
 	if v, ok := d.GetOk("route_response_selection_expression"); ok {
 		req.RouteResponseSelectionExpression = aws.String(v.(string))
@@ -137,7 +137,7 @@ func resourceAwsApiGateway2RouteRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("authorizer_id", resp.AuthorizerId)
 	d.Set("model_selection_expression", resp.ModelSelectionExpression)
 	d.Set("operation_name", resp.OperationName)
-	if err := d.Set("request_models", flattenApiGateway2RouteRequestModels(resp.RequestModels)); err != nil {
+	if err := d.Set("request_models", pointersMapToStringList(resp.RequestModels)); err != nil {
 		return fmt.Errorf("error setting request_models: %s", err)
 	}
 	d.Set("route_key", resp.RouteKey)
@@ -170,7 +170,7 @@ func resourceAwsApiGateway2RouteUpdate(d *schema.ResourceData, meta interface{})
 		req.OperationName = aws.String(d.Get("operation_name").(string))
 	}
 	if d.HasChange("request_models") {
-		req.RequestModels = expandApiGateway2RouteRequestModels(d.Get("request_models").(map[string]interface{}))
+		req.RequestModels = stringMapToPointers(d.Get("request_models").(map[string]interface{}))
 	}
 	if d.HasChange("route_response_selection_expression") {
 		req.RouteResponseSelectionExpression = aws.String(d.Get("route_response_selection_expression").(string))
@@ -216,22 +216,4 @@ func resourceAwsApiGateway2RouteImport(d *schema.ResourceData, meta interface{})
 	d.Set("api_id", parts[0])
 
 	return []*schema.ResourceData{d}, nil
-}
-
-func expandApiGateway2RouteRequestModels(m map[string]interface{}) map[string]*string {
-	result := map[string]*string{}
-	for k, v := range m {
-		result[k] = aws.String(v.(string))
-	}
-
-	return result
-}
-
-func flattenApiGateway2RouteRequestModels(m map[string]*string) map[string]interface{} {
-	result := map[string]interface{}{}
-	for k, v := range m {
-		result[k] = aws.StringValue(v)
-	}
-
-	return result
 }
