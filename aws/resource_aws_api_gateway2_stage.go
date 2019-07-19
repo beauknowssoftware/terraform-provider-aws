@@ -278,11 +278,11 @@ func resourceAwsApiGateway2StageRead(d *schema.ResourceData, meta interface{}) e
 	}
 	err = d.Set("stage_variables", pointersMapToStringList(resp.StageVariables))
 	if err != nil {
-		return fmt.Errorf("error setting stage_variables")
+		return fmt.Errorf("error setting stage_variables: %s", err)
 	}
 	err = d.Set("tags", tagsToMapGeneric(resp.Tags))
 	if err != nil {
-		return fmt.Errorf("error setting tags")
+		return fmt.Errorf("error setting tags: %s", err)
 	}
 
 	return nil
