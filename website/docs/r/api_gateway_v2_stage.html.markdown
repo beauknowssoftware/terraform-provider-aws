@@ -68,9 +68,9 @@ In addition to all arguments above, the following attributes are exported:
 
 * `id` - The stage identifier.
 * `arn` - The ARN of the stage.
-* `execution_arn` - The execution ARN to be used in [`lambda_permission`](/docs/providers/aws/r/lambda_permission.html)'s `source_arn`
-  when allowing API Gateway to invoke a Lambda function,
-  e.g. `arn:aws:execute-api:eu-west-2:123456789012:z4675bid1j/example-stage`
+* `execution_arn` - The ARN prefix to be used in an [`aws_lambda_permission`](/docs/providers/aws/r/lambda_permission.html)'s `source_arn` attribute
+or in an [`aws_iam_policy`](/docs/providers/aws/r/iam_policy.html) to authorize access to the [`@connections` API](https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-how-to-call-websocket-api-connections.html).
+See the [Amazon API Gateway Developer Guide](https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-websocket-control-access-iam.html) for details.
 * `invoke_url` - The URL to invoke the API pointing to the stage,
   e.g. `wss://z4675bid1j.execute-api.eu-west-2.amazonaws.com/example-stage`
 
