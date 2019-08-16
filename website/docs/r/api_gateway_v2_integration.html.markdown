@@ -58,7 +58,7 @@ Valid values: `AWS`, `AWS_PROXY`, `HTTP`, `HTTP_PROXY`, `MOCK`.
 * `content_handling_strategy` - (Optional) How to handle response payload content type conversions. Valid values: `CONVERT_TO_BINARY`, `CONVERT_TO_TEXT`.
 * `credentials_arn` - (Optional) The credentials required for the integration, if any.
 * `description` - (Optional) The description of the integration.
-* `integration_method` - (Optional) The integration's HTTP method.
+* `integration_method` - (Optional) The integration's HTTP method. Must be specified if `integration_type` is not `MOCK`.
 * `integration_uri` - (Optional) The URI of the Lambda function for a Lambda proxy integration, where `integration_type` is `AWS_PROXY`.
 * `passthrough_behavior` - (Optional) The pass-through behavior for incoming requests based on the Content-Type header in the request, and the available mapping templates specified as the `request_templates` attribute. Valid values: `WHEN_NO_MATCH`, `WHEN_NO_TEMPLATES`, `NEVER`. Default is `WHEN_NO_MATCH`.
 * `request_templates` - (Optional) A map of Velocity templates that are applied on the request payload based on the value of the Content-Type header sent by the client.
