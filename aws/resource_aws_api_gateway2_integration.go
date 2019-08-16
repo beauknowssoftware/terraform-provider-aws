@@ -20,6 +20,7 @@ func resourceAwsApiGateway2Integration() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: resourceAwsApiGateway2IntegrationImport,
 		},
+		CustomizeDiff: resourceAwsApiGateway2IntegrationCustomizeDiff,
 
 		Schema: map[string]*schema.Schema{
 			"api_id": {
@@ -278,4 +279,21 @@ func resourceAwsApiGateway2IntegrationImport(d *schema.ResourceData, meta interf
 	d.Set("api_id", parts[0])
 
 	return []*schema.ResourceData{d}, nil
+}
+
+func resourceAwsApiGateway2IntegrationCustomizeDiff(diff *schema.ResourceDiff, meta interface{}) error {
+	if diff.Id() == "" {
+		// New resource.
+		integrationMethod := diff.Get("integration_method").(string)
+		integrationType := diff.Get("integration_type").(string)
+		if integrationType == apigatewayv2.IntegrationTypeMock {
+			if integrationMethod != "" {
+				return fmt.Errorf("'integration_method' must not be set when 'integration_type' is '%s'", integrationType)
+			}
+		} else if integrationMethod == "" {
+			return fmt.Errorf("'integration_method' must be set when 'integration_type' is '%s'", integrationType)
+		}
+	}
+
+	return nil
 }
