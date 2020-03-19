@@ -52,6 +52,10 @@ func resourceAwsApiGateway2Stage() *schema.Resource {
 					},
 				},
 			},
+			"auto_deploy": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 			"api_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -214,6 +218,9 @@ func resourceAwsApiGateway2StageCreate(d *schema.ResourceData, meta interface{})
 	if v, ok := d.GetOk("tags"); ok {
 		req.Tags = keyvaluetags.New(v.(map[string]interface{})).IgnoreAws().Apigatewayv2Tags()
 	}
+	if v, ok := d.GetOk("auto_deploy"); ok {
+		req.AutoDeploy = aws.Bool(v.(bool))
+	}
 
 	log.Printf("[DEBUG] Creating API Gateway v2 stage: %s", req)
 	resp, err := conn.CreateStage(req)
@@ -263,6 +270,7 @@ func resourceAwsApiGateway2StageRead(d *schema.ResourceData, meta interface{}) e
 	}
 	d.Set("deployment_id", resp.DeploymentId)
 	d.Set("description", resp.Description)
+	d.Set("auto_deploy", resp.AutoDeploy)
 	executionArn := arn.ARN{
 		Partition: meta.(*AWSClient).partition,
 		Service:   "execute-api",
@@ -319,6 +327,9 @@ func resourceAwsApiGateway2StageUpdate(d *schema.ResourceData, meta interface{})
 	}
 	if d.HasChange("route_settings") {
 		req.RouteSettings = expandApiGateway2RouteSettings(d.Get("route_settings").(*schema.Set))
+	}
+	if d.HasChange("auto_deploy") {
+		req.AutoDeploy = aws.Bool(d.Get("auto_deploy").(bool))
 	}
 	if d.HasChange("stage_variables") {
 		updateStage = true
