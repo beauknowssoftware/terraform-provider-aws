@@ -69,6 +69,7 @@ func resourceAwsApiGateway2Stage() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			/*
 			"default_route_settings": {
 				Type:             schema.TypeList,
 				Optional:         true,
@@ -110,6 +111,7 @@ func resourceAwsApiGateway2Stage() *schema.Resource {
 					},
 				},
 			},
+			 */
 			"deployment_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -200,9 +202,11 @@ func resourceAwsApiGateway2StageCreate(d *schema.ResourceData, meta interface{})
 	if v, ok := d.GetOk("client_certificate_id"); ok {
 		req.ClientCertificateId = aws.String(v.(string))
 	}
+	/*
 	if v, ok := d.GetOk("default_route_settings"); ok {
 		req.DefaultRouteSettings = expandApiGateway2DefaultRouteSettings(v.([]interface{}))
 	}
+	 */
 	if v, ok := d.GetOk("deployment_id"); ok {
 		req.DeploymentId = aws.String(v.(string))
 	}
@@ -264,10 +268,12 @@ func resourceAwsApiGateway2StageRead(d *schema.ResourceData, meta interface{}) e
 	}.String()
 	d.Set("arn", resourceArn)
 	d.Set("client_certificate_id", resp.ClientCertificateId)
+	/*
 	err = d.Set("default_route_settings", flattenApiGateway2DefaultRouteSettings(resp.DefaultRouteSettings))
 	if err != nil {
 		return fmt.Errorf("error setting default_route_settings: %s", err)
 	}
+	 */
 	d.Set("deployment_id", resp.DeploymentId)
 	d.Set("description", resp.Description)
 	d.Set("auto_deploy", resp.AutoDeploy)
@@ -313,10 +319,12 @@ func resourceAwsApiGateway2StageUpdate(d *schema.ResourceData, meta interface{})
 		updateStage = true
 		req.ClientCertificateId = aws.String(d.Get("client_certificate_id").(string))
 	}
+	/*
 	if d.HasChange("default_route_settings") {
 		updateStage = true
 		req.DefaultRouteSettings = expandApiGateway2DefaultRouteSettings(d.Get("default_route_settings").([]interface{}))
 	}
+	 */
 	if d.HasChange("deployment_id") {
 		updateStage = true
 		req.DeploymentId = aws.String(d.Get("deployment_id").(string))
@@ -329,6 +337,7 @@ func resourceAwsApiGateway2StageUpdate(d *schema.ResourceData, meta interface{})
 		req.RouteSettings = expandApiGateway2RouteSettings(d.Get("route_settings").(*schema.Set))
 	}
 	if d.HasChange("auto_deploy") {
+		updateStage = true
 		req.AutoDeploy = aws.Bool(d.Get("auto_deploy").(bool))
 	}
 	if d.HasChange("stage_variables") {
